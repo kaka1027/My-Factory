@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import sequelize from './config/database';
 import visitorRoutes from './routes/visitor';
 import articleRoutes from './routes/article';
 
@@ -17,9 +17,15 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// 连接数据库
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kaka-website')
-  .then(() => console.log('数据库连接成功'))
+// 连接数据库并同步模型
+sequelize.authenticate()
+  .then(() => {
+    console.log('MySQL 数据库连接成功');
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log('数据库表同步完成');
+  })
   .catch((err) => console.error('数据库连接失败:', err));
 
 // 路由
