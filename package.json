@@ -1,0 +1,18 @@
+{
+  "name": "abd-cafe-backend",
+  "version": "1.0.0",
+  "description": "ABD Cafe Backend Server",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "ejs": "^3.1.9"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

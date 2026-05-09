@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Introduction</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body>
+        <nav>
+            <div class="nav-container">
+                <div class="nav-links">
+                    <a href="/">Home</a>
+                    <a href="/about">About</a>
+                    <a href="/game">Game</a>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">🌙</span>
+                    <span id="theme-text">Dark</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="intro-section">
+                <div class="intro-text">
+                    <h1>My Introduction</h1>
+                    <p><strong>Name:</strong> YUCHEN HUANG</p>
+                    <p><strong>Study:</strong> Web Application Development</p>
+                    <p>This is my JC2503 assignment.</p>
+                    <p>Welcome to my personal website! I'm passionate about web development and creating interactive experiences. This project showcases my skills in building real-time multiplayer applications using modern web technologies.</p>
+                </div>
+                <div class="intro-image">
+                    <img src="/images/bear1.png" alt="Profile">
+                </div>
+            </div>
+
+            <div class="gallery-section">
+                <h2>My Interests</h2>
+                <div class="image-gallery">
+                    <a href="/about#gaming" class="gallery-item">
+                        <div class="dual-image">
+                            <img src="/images/val7.png" alt="Valorant 1">
+                            <img src="/images/val8.png" alt="Valorant 2">
+                        </div>
+                        <p>Gaming</p>
+                    </a>
+                    <a href="/about#work" class="gallery-item">
+                        <img src="/images/cafe.png" alt="Coffee">
+                        <p>Coffee Culture</p>
+                    </a>
+                    <a href="/about#music" class="gallery-item">
+                        <img src="/images/kpop4.png" alt="Music">
+                        <p>Music</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Theme management
+            function getSystemTheme() {
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            function applyTheme(theme) {
+                if (theme === 'system') {
+                    theme = getSystemTheme();
+                }
+                document.documentElement.setAttribute('data-theme', theme);
+
+                const icon = document.getElementById('theme-icon');
+                const text = document.getElementById('theme-text');
+
+                if (theme === 'dark') {
+                    icon.textContent = '☀️';
+                    text.textContent = 'Light';
+                } else {
+                    icon.textContent = '🌙';
+                    text.textContent = 'Dark';
+                }
+            }
+
+            function toggleTheme() {
+                const currentTheme = localStorage.getItem('theme') || 'system';
+                let newTheme;
+
+                if (currentTheme === 'light') {
+                    newTheme = 'dark';
+                } else if (currentTheme === 'dark') {
+                    newTheme = 'system';
+                } else {
+                    newTheme = 'light';
+                }
+
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+
+                if (newTheme === 'system') {
+                    document.getElementById('theme-text').textContent = 'System';
+                }
+            }
+
+            // Initialize theme on page load
+            const savedTheme = localStorage.getItem('theme') || 'system';
+            applyTheme(savedTheme);
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (localStorage.getItem('theme') === 'system') {
+                    applyTheme('system');
+                }
+            });
+        </script>
+    </body>
+</html>
