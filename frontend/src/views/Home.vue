@@ -3,9 +3,9 @@
     <div class="intro-section">
       <div class="intro-text">
         <h1>My Introduction</h1>
-        <p><strong>Name:</strong> YUCHEN HUANG</p>
-        <p><strong>Study:</strong> Web Application Development</p>
-        <p>This is my JC2503 assignment.</p>
+        <p><strong>Name:</strong> KAKA</p>
+        <p><strong>Study:</strong> SCNU & ABDN</p>
+        <p>This is my website.</p>
         <p>Welcome to my personal website! I'm passionate about web development and creating interactive experiences. This project showcases my skills in building real-time multiplayer applications using modern web technologies.</p>
       </div>
       <div class="intro-image">
