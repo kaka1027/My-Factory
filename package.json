@@ -2,17 +2,21 @@
   "name": "abd-cafe-backend",
   "version": "1.0.0",
   "description": "ABD Cafe Backend Server",
-  "main": "src/index.js",
+  "main": "backend/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node backend/index.js",
+    "dev": "nodemon backend/index.js",
+    "frontend": "cd frontend && yarn dev",
+    "dev:all": "concurrently \"yarn dev\" \"yarn frontend\" --names \"backend,frontend\" --prefix-colors \"blue,green\""
   },
   "dependencies": {
+    "cors": "^2.8.6",
+    "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "socket.io": "^4.6.1",
-    "ejs": "^3.1.9"
+    "socket.io": "^4.6.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "nodemon": "^3.0.1"
   }
 }
