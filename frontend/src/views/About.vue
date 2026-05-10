@@ -9,9 +9,9 @@
         <p>I'm passionate about competitive gaming, especially Valorant. The strategic gameplay and team coordination make it an exciting experience.</p>
 
         <div class="image-row">
-          <img src="/images/val1.png" alt="Valorant 1">
+          <VideoPlayer src="/videos/五杀1.mp4" />
           <img src="/images/val5.png" alt="Valorant 2">
-          <img src="/images/val6.png" alt="Valorant 3">
+          <VideoPlayer src="/videos/四杀1.mp4" />
           <img src="/images/val2.png" alt="Valorant 4">
           <img src="/images/val3.png" alt="Valorant 5">
           <img src="/images/val4.png" alt="Valorant 6">
@@ -57,6 +57,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import VideoPlayer from '../components/VideoPlayer.vue'
 
 const route = useRoute()
 
