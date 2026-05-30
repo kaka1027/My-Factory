@@ -2,7 +2,7 @@
   <div class="container projects-page">
     <div class="projects-header">
       <div>
-        <h1>项目</h1>
+        <h1>Projects</h1>
         <p>上传文章、图片和链接，保存自己的项目记录。</p>
       </div>
       <button type="button" @click="startNewProject">添加自主上传</button>
