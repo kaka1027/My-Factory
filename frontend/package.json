@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vercel/blob": "^0.29.2",
+    "@vercel/blob": "^2.3.3",
     "socket.io-client": "^4.8.3",
     "vue": "^3.5.32",
     "vue-router": "4"
