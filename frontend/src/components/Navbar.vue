@@ -4,6 +4,7 @@
       <div class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/about">About</router-link>
+        <router-link to="/projects">项目</router-link>
       </div>
       <button class="theme-toggle" @click="handleToggleTheme">
         <span id="theme-icon">{{ themeIcon }}</span>
