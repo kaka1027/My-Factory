@@ -2,6 +2,10 @@ import { list, put } from '@vercel/blob'
 
 const PROJECTS_FILE = 'projects/projects.json'
 
+function getBlobToken() {
+  return process.env.BLOB_READ_WRITE_TOKEN
+}
+
 export default async function handler(request, response) {
   try {
     response.setHeader('Access-Control-Allow-Origin', '*')
@@ -27,7 +31,8 @@ export default async function handler(request, response) {
         access: 'public',
         contentType: 'application/json',
         addRandomSuffix: false,
-        allowOverwrite: true
+        allowOverwrite: true,
+        token: getBlobToken()
       })
 
       response.status(200).json({ ok: true })
@@ -36,15 +41,18 @@ export default async function handler(request, response) {
 
     response.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
+    console.error('Projects API failed:', error)
     response.status(500).json({
       error: 'Failed to save projects',
-      message: error.message
+      message: error.message,
+      code: error.name || 'Error',
+      hasBlobToken: Boolean(getBlobToken())
     })
   }
 }
 
 async function readProjects() {
-  const blobs = await list({ prefix: PROJECTS_FILE, limit: 1 })
+  const blobs = await list({ prefix: PROJECTS_FILE, limit: 1, token: getBlobToken() })
   const file = blobs.blobs.find((blob) => blob.pathname === PROJECTS_FILE)
 
   if (!file) {

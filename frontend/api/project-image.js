@@ -1,5 +1,9 @@
 import { put } from '@vercel/blob'
 
+function getBlobToken() {
+  return process.env.BLOB_READ_WRITE_TOKEN
+}
+
 export const config = {
   api: {
     bodyParser: false
@@ -7,48 +11,59 @@ export const config = {
 }
 
 export default async function handler(request, response) {
-  response.setHeader('Access-Control-Allow-Origin', '*')
-  response.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  try {
+    response.setHeader('Access-Control-Allow-Origin', '*')
+    response.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
 
-  if (request.method === 'OPTIONS') {
-    response.status(204).end()
-    return
+    if (request.method === 'OPTIONS') {
+      response.status(204).end()
+      return
+    }
+
+    if (request.method !== 'POST') {
+      response.status(405).json({ error: 'Method not allowed' })
+      return
+    }
+
+    const chunks = []
+
+    for await (const chunk of request) {
+      chunks.push(chunk)
+    }
+
+    const contentType = request.headers['content-type'] || ''
+    const boundary = getBoundary(contentType)
+
+    if (!boundary) {
+      response.status(400).json({ error: 'Missing multipart boundary' })
+      return
+    }
+
+    const file = parseMultipartFile(Buffer.concat(chunks), boundary)
+
+    if (!file) {
+      response.status(400).json({ error: 'No image uploaded' })
+      return
+    }
+
+    const safeName = file.filename.replace(/[^\w.-]/g, '-')
+    const pathname = `projects/images/${Date.now()}-${safeName}`
+    const blob = await put(pathname, file.content, {
+      access: 'public',
+      contentType: file.contentType || 'application/octet-stream',
+      token: getBlobToken()
+    })
+
+    response.status(200).json({ url: blob.url })
+  } catch (error) {
+    console.error('Project image API failed:', error)
+    response.status(500).json({
+      error: 'Failed to upload project image',
+      message: error.message,
+      code: error.name || 'Error',
+      hasBlobToken: Boolean(getBlobToken())
+    })
   }
-
-  if (request.method !== 'POST') {
-    response.status(405).json({ error: 'Method not allowed' })
-    return
-  }
-
-  const chunks = []
-
-  for await (const chunk of request) {
-    chunks.push(chunk)
-  }
-
-  const contentType = request.headers['content-type'] || ''
-  const boundary = getBoundary(contentType)
-
-  if (!boundary) {
-    response.status(400).json({ error: 'Missing multipart boundary' })
-    return
-  }
-
-  const file = parseMultipartFile(Buffer.concat(chunks), boundary)
-
-  if (!file) {
-    response.status(400).json({ error: 'No image uploaded' })
-    return
-  }
-
-  const safeName = file.filename.replace(/[^\w.-]/g, '-')
-  const pathname = `projects/images/${Date.now()}-${safeName}`
-  const blob = await put(pathname, file.content, {
-    access: 'public',
-    contentType: file.contentType || 'application/octet-stream'
-  })
-
-  response.status(200).json({ url: blob.url })
 }
 
 function getBoundary(contentType) {
