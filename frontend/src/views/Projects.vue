@@ -48,13 +48,22 @@
         v-for="project in projects"
         :key="project.id"
         class="project-card"
-        :class="{ cover: viewMode === 'cover' }"
+        :class="[
+          viewMode === 'cover' ? 'project-card-cover' : 'project-card-list',
+          { 'has-cover': viewMode === 'list' && project.imageUrl }
+        ]"
       >
         <div v-if="viewMode === 'cover'" class="project-cover">
           <img v-if="project.imageUrl" :src="project.imageUrl" :alt="project.title">
           <div v-else class="project-cover-placeholder">{{ copy.noCover }}</div>
         </div>
-        <img v-else-if="project.imageUrl" :src="project.imageUrl" :alt="project.title">
+        <img
+          v-else-if="project.imageUrl"
+          class="project-card-backdrop"
+          :src="project.imageUrl"
+          alt=""
+          aria-hidden="true"
+        >
         <div class="project-card-content">
           <div class="project-card-header">
             <div>
@@ -64,9 +73,6 @@
               </div>
               <p>{{ copy.authorPrefix }}{{ project.creator }}</p>
             </div>
-            <button type="button" class="secondary-button small-button" @click="editProject(project)">
-              {{ copy.edit }}
-            </button>
           </div>
 
           <p class="project-content">{{ project.content }}</p>
@@ -81,6 +87,14 @@
               {{ copy.copyEmail }}
             </button>
           </div>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="secondary-button small-button" @click="editProject(project)">
+            {{ copy.edit }}
+          </button>
+          <button type="button" class="danger-button small-button" @click="deleteProject(project)">
+            {{ copy.delete }}
+          </button>
         </div>
       </article>
     </section>
@@ -157,6 +171,15 @@
             </div>
 
             <div class="form-actions">
+              <button
+                v-if="form.id"
+                type="button"
+                class="danger-button"
+                :disabled="isSaving"
+                @click="deleteProjectFromForm"
+              >
+                {{ copy.delete }}
+              </button>
               <button type="button" class="secondary-button" @click="closeForm">{{ copy.cancel }}</button>
               <button type="submit" class="primary-button" :disabled="isSaving">
                 {{ isSaving ? copy.saving : submitLabel }}
@@ -191,6 +214,7 @@ const translations = {
     noCover: '暂无封面',
     authorPrefix: '作者：',
     edit: '编辑',
+    delete: '删除',
     openLink: '打开链接',
     copyLink: '复制链接',
     copyEmail: '复制邮箱',
@@ -227,6 +251,9 @@ const translations = {
     uploadFailed: '上传失败，请稍后再试。',
     cloudSaveFailed: '已保存到本地，但云端保存失败。请确认 Vercel Blob 已配置。',
     copied: '已复制。',
+    deleteConfirm: '确定要删除这个项目吗？此操作会同步到云端。',
+    projectDeleted: '项目已删除。',
+    deleteFailed: '删除失败，请稍后再试。',
     addedAt: '添加于',
     createdUnknown: '添加时间未知'
   },
@@ -245,6 +272,7 @@ const translations = {
     noCover: 'No Cover',
     authorPrefix: 'Author: ',
     edit: 'Edit',
+    delete: 'Delete',
     openLink: 'Open Link',
     copyLink: 'Copy Link',
     copyEmail: 'Copy Email',
@@ -281,6 +309,9 @@ const translations = {
     uploadFailed: 'Upload failed. Please try again later.',
     cloudSaveFailed: 'Saved locally, but cloud save failed. Please confirm Vercel Blob is configured.',
     copied: 'Copied.',
+    deleteConfirm: 'Delete this project? This change will sync to the cloud.',
+    projectDeleted: 'Project deleted.',
+    deleteFailed: 'Delete failed. Please try again later.',
     addedAt: 'Added at',
     createdUnknown: 'Created time unknown'
   }
@@ -401,6 +432,34 @@ async function persistProjects(nextProjects) {
   }
 }
 
+async function deleteProject(project) {
+  if (!window.confirm(copy.value.deleteConfirm)) return
+
+  isSaving.value = true
+  setMessage('', false)
+
+  try {
+    const nextProjects = projects.value.filter((item) => item.id !== project.id)
+    await persistProjects(nextProjects)
+    projects.value = nextProjects
+    if (form.id === project.id) {
+      resetForm()
+      closeForm()
+    }
+    setMessage(copy.value.projectDeleted, false)
+  } catch (error) {
+    setMessage(error.message || copy.value.deleteFailed, true)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function deleteProjectFromForm() {
+  const project = projects.value.find((item) => item.id === form.id)
+  if (!project) return
+  await deleteProject(project)
+}
+
 function upsertProject(project) {
   const existingIndex = projects.value.findIndex((item) => item.id === project.id)
   if (existingIndex >= 0) {
@@ -517,6 +576,7 @@ function formatDateTime(value) {
 
 .primary-button,
 .secondary-button,
+.danger-button,
 .link-button {
   border: 0;
   border-radius: 8px;
@@ -549,7 +609,29 @@ function formatDateTime(value) {
   border: 1px solid var(--border-color);
 }
 
+.danger-button {
+  min-height: 40px;
+  padding: 9px 14px;
+  color: var(--danger);
+  background: var(--bg-primary);
+  border: 1px solid var(--danger);
+}
+
+.danger-button:hover {
+  color: var(--text-inverse);
+  background: var(--danger);
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .small-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
   min-height: 34px;
   padding: 7px 12px;
   font-size: 13px;
@@ -633,6 +715,10 @@ function formatDateTime(value) {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0;
+  transition:
+    background var(--transition-speed) ease,
+    color var(--transition-speed) ease,
+    transform var(--transition-speed) ease;
 }
 
 .view-toggle button:hover {
@@ -647,12 +733,17 @@ function formatDateTime(value) {
   background: var(--accent-primary);
 }
 
+.view-toggle button.active .view-icon {
+  transform: scale(1.06);
+}
+
 .view-icon {
   position: relative;
   display: block;
   width: 20px;
   height: 16px;
   color: currentColor;
+  transition: transform var(--transition-speed) ease;
 }
 
 .view-icon.list {
@@ -720,31 +811,66 @@ function formatDateTime(value) {
 }
 
 .project-card {
-  display: grid;
-  grid-template-columns: minmax(180px, 260px) 1fr;
-  gap: 0;
+  position: relative;
   overflow: hidden;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
+  transition:
+    background var(--transition-speed) ease,
+    border-color var(--transition-speed) ease,
+    box-shadow var(--transition-speed) ease,
+    transform 0.24s ease,
+    opacity 0.24s ease;
+  will-change: transform, opacity;
 }
 
-.project-card.cover {
+.project-card-list {
+  display: grid;
   grid-template-columns: 1fr;
+  gap: 0;
+  min-height: 132px;
+  animation: projectListIn 0.22s ease both;
 }
 
-.project-card > img {
-  width: 100%;
-  height: 100%;
-  min-height: 220px;
+.project-card-cover {
+  display: grid;
+  grid-template-columns: 1fr;
+  animation: projectCoverIn 0.24s ease both;
+}
+
+.project-card-backdrop {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: calc(100% + 32px);
+  height: calc(100% + 32px);
   object-fit: cover;
-  background: var(--bg-secondary);
+  object-position: center;
+  filter: blur(14px);
+  opacity: 0.45;
+  transform: scale(1.08);
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.project-card-list.has-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--bg-primary);
+  opacity: 0.82;
 }
 
 .project-cover {
   aspect-ratio: 16 / 10;
   overflow: hidden;
   background: var(--bg-secondary);
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
 }
 
 .project-cover img {
@@ -765,9 +891,26 @@ function formatDateTime(value) {
 }
 
 .project-card-content {
+  position: relative;
+  z-index: 2;
   display: grid;
-  gap: 18px;
-  padding: 24px;
+  transition:
+    padding 0.24s ease,
+    gap 0.24s ease,
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.project-card-list .project-card-content {
+  gap: 8px;
+  padding: 14px 86px 14px 16px;
+}
+
+.project-card-cover .project-card-content {
+  gap: 12px;
+  align-content: start;
+  min-height: 190px;
+  padding: 18px 18px 74px;
 }
 
 .project-card-header {
@@ -775,6 +918,44 @@ function formatDateTime(value) {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.project-card-header > div:first-child {
+  min-width: 0;
+}
+
+.card-actions {
+  display: flex;
+  position: absolute;
+  z-index: 3;
+  flex-shrink: 0;
+  margin-left: auto;
+  transition:
+    top 0.24s ease,
+    right 0.24s ease,
+    bottom 0.24s ease,
+    transform 0.24s ease,
+    opacity 0.24s ease;
+}
+
+.project-card-list .card-actions {
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  align-items: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 58px;
+}
+
+.project-card-cover .card-actions {
+  right: 14px;
+  bottom: 14px;
+  align-items: center;
+  flex-direction: row;
+  gap: 8px;
 }
 
 .project-title-row {
@@ -792,17 +973,46 @@ function formatDateTime(value) {
   line-height: 1.3;
 }
 
+.project-card-list .project-title-row h3 {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-card-header p {
-  margin-top: 6px;
+  margin-top: 3px;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.project-card-list .project-card-header p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-content {
   color: var(--text-primary);
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.55;
   white-space: pre-wrap;
+}
+
+.project-card-list .project-content {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.project-card-cover .project-content {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .project-meta {
@@ -812,6 +1022,11 @@ function formatDateTime(value) {
   gap: 10px 14px;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.project-card-list .project-meta {
+  overflow: hidden;
+  max-height: 24px;
 }
 
 .project-meta a {
@@ -828,12 +1043,30 @@ function formatDateTime(value) {
   grid-column: 1 / -1;
 }
 
-.project-card.cover .project-card-content {
-  align-content: start;
+.project-card-cover .project-card-header {
+  align-items: flex-start;
 }
 
-.project-card.cover .project-card-header {
-  align-items: flex-start;
+@keyframes projectListIn {
+  from {
+    opacity: 0.72;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes projectCoverIn {
+  from {
+    opacity: 0.72;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-overlay {
@@ -1088,6 +1321,10 @@ function formatDateTime(value) {
   margin-top: auto;
 }
 
+.form-actions .danger-button {
+  margin-right: auto;
+}
+
 @media (max-width: 900px) {
   .projects-page {
     padding: 32px 20px 56px;
@@ -1098,7 +1335,7 @@ function formatDateTime(value) {
     flex-direction: column;
   }
 
-  .project-card {
+  .project-card-list {
     grid-template-columns: 1fr;
   }
 
