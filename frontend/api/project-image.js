@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob'
+import { get, put } from '@vercel/blob'
 
 function getBlobToken() {
   return process.env.BLOB_READ_WRITE_TOKEN
@@ -13,10 +13,38 @@ export const config = {
 export default async function handler(request, response) {
   try {
     response.setHeader('Access-Control-Allow-Origin', '*')
-    response.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
 
     if (request.method === 'OPTIONS') {
       response.status(204).end()
+      return
+    }
+
+    if (request.method === 'GET') {
+      const pathname = request.query?.pathname
+      if (!pathname || typeof pathname !== 'string') {
+        response.status(400).json({ error: 'Missing image pathname' })
+        return
+      }
+
+      const result = await get(pathname, {
+        access: 'private',
+        token: getBlobToken(),
+        useCache: false
+      })
+
+      if (!result?.stream) {
+        response.status(404).json({ error: 'Image not found' })
+        return
+      }
+
+      response.setHeader('Content-Type', result.blob.contentType || 'application/octet-stream')
+      response.setHeader('Cache-Control', 'public, max-age=3600')
+
+      for await (const chunk of result.stream) {
+        response.write(chunk)
+      }
+      response.end()
       return
     }
 
@@ -49,12 +77,14 @@ export default async function handler(request, response) {
     const safeName = file.filename.replace(/[^\w.-]/g, '-')
     const pathname = `projects/images/${Date.now()}-${safeName}`
     const blob = await put(pathname, file.content, {
-      access: 'public',
+      access: 'private',
       contentType: file.contentType || 'application/octet-stream',
       token: getBlobToken()
     })
 
-    response.status(200).json({ url: blob.url })
+    response.status(200).json({
+      url: `/api/project-image?pathname=${encodeURIComponent(blob.pathname)}`
+    })
   } catch (error) {
     console.error('Project image API failed:', error)
     response.status(500).json({

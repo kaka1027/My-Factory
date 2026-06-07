@@ -1,4 +1,4 @@
-import { list, put } from '@vercel/blob'
+import { get, list, put } from '@vercel/blob'
 
 const PROJECTS_FILE = 'projects/projects.json'
 
@@ -28,7 +28,7 @@ export default async function handler(request, response) {
       const projects = Array.isArray(body?.projects) ? body.projects : []
 
       await put(PROJECTS_FILE, JSON.stringify(projects, null, 2), {
-        access: 'public',
+        access: 'private',
         contentType: 'application/json',
         addRandomSuffix: false,
         allowOverwrite: true,
@@ -59,10 +59,26 @@ async function readProjects() {
     return []
   }
 
-  const result = await fetch(file.url)
-  if (!result.ok) {
+  const result = await get(PROJECTS_FILE, {
+    access: 'private',
+    token: getBlobToken(),
+    useCache: false
+  })
+
+  if (!result?.stream) {
     return []
   }
 
-  return result.json()
+  return JSON.parse(await streamToString(result.stream))
+}
+
+async function streamToString(stream) {
+  const decoder = new TextDecoder()
+  let value = ''
+
+  for await (const chunk of stream) {
+    value += decoder.decode(chunk, { stream: true })
+  }
+
+  return value + decoder.decode()
 }
